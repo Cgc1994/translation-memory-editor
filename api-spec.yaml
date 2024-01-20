@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: Translation memory OpenAPI
+  description: |-
+    This API represents a very narrow set of functionality of a [Translation Memory](https://www.languagewire.com/en/blog/what-are-translation-memories) system.
+    
+    Here you can retrieve a list of text pairs for a given language and also batch update them. Our API only exposes a single error type (APIError) that is used for every non-success HTTP code.
+  version: 1.0.0
+
+tags:
+  - name: translation-memories
+paths:
+  /languages:
+    get:
+      tags:
+        - languages
+      summary: Get available languages
+      operationId: getLanguages
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Language'
+                example:
+                  - tag: "en-gb"
+                    name: "English (United Kingdom)"
+                  - tag: "en-es"
+                    name: "Spanish (Spain)"
+                  - tag: "pt-pt"
+                    name: "Portuguese (Portugal)"
+  /translation-memories/{source}/{target}:
+    get:
+      tags:
+        - translation-memories
+      description: |-
+        Get segments for the given language combination.
+      operationId: getTranslationMemories
+      parameters:
+        - name: source
+          in: path
+          description: Source language tag
+          required: true
+          schema:
+            type: string
+          example: en
+        - name: target
+          in: path
+          description: Target language tag
+          required: true
+          schema:
+            type: string
+          example: es
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationMemories'
+              example:
+                page:
+                  - id: 1
+                    texts:
+                      - id: 1
+                        language: en
+                        text: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                      - id: 2
+                        language: es
+                        text: Cheese on toast airedale the big cheese. Danish fontina cheesy grin airedale danish fontina taleggio the big cheese macaroni cheese port-salut. 
+                  - id: 2
+                    texts:
+                      - id: 3
+                        language: en
+                        text: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                      - id: 4
+                        language: es
+                        text: Edam fromage lancashire feta caerphilly everyone loves chalk and cheese brie. Red leicester parmesan cheese and biscuits cheesy feet blue castello cheesecake fromage frais smelly cheese.
+        '404':
+          description: Language not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Language not found"
+        '500':
+          description: Server side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "  java.net.SocketTimeoutException:Receive timed out"
+
+  /translation-memories:  
+    put:
+      tags:
+        - translation-memories
+      description: |-
+        Batch replace multiple segments
+      operationId: batchUpdateTranslationMemories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpdateTranslationMemoriesRequest'
+            example:
+              texts:
+                - id: 1
+                  updatedText: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Character limit surpassed"
+        '500':
+          description: Server side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "  java.net.SocketTimeoutException:Receive timed out"
+components:
+  schemas:
+    Language:
+      type: object
+      properties:
+        tag:
+          type: string
+        name:
+          type: string
+    Text:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        language:
+          type: string
+        text:
+          type: string
+    TextCollection:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        texts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Text'
+    TranslationMemories:
+      type: object
+      properties:
+        page:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextCollection'
+    UpdateTextRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        updatedText:
+          type: string
+    BatchUpdateTranslationMemoriesRequest:
+      type: object
+      properties:
+        texts:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpdateTextRequest'
+            
+    ApiError:
+      type: object
+      properties:
+        message:
+          type: string
